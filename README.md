@@ -29,7 +29,7 @@ bun add json-accelerator
 
 ## Usage
 
-It is designed to be used with [https://github.com/sinclairzx81/typebox](TypeBox) but an OpenAPI schema should also work.
+It is designed to be used with [TypeBox](https://github.com/sinclairzx81/typebox) but an OpenAPI schema should also work.
 
 ```typescript
 import { Type as t } from '@sinclair/typebox'
