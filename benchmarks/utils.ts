@@ -16,6 +16,8 @@ export const benchmark = <T extends TAnySchema>(
 		throw new Error('Invalid result')
 	}
 
+	if (process.env.DEBUG) console.log(encode.toString())
+
 	barplot(() => {
 		summary(() => {
 			bench('JSON Stingify', () => {

@@ -89,6 +89,33 @@ export const mergeObjectIntersection = (schema: TAnySchema): TAnySchema => {
 	return newSchema
 }
 
+const isDateType = (schema: TAnySchema): boolean => {
+	if (!schema.anyOf || (Kind in schema && schema[Kind] !== 'Union'))
+		return false
+
+	if (!schema.anyOf) return false
+
+	let hasDateType = false
+	let hasStringFormatDate = false
+	let hasNumberType = false
+
+	if (schema.anyOf)
+		for (const type of schema.anyOf) {
+			if (!hasDateType && type.type === 'Date') hasDateType = true
+
+			if (
+				!hasStringFormatDate &&
+				type.type === 'string' &&
+				(type.format === 'date' || type.format === 'date-time')
+			)
+				hasStringFormatDate = true
+
+			if (!hasNumberType && type.type === 'number') hasNumberType = true
+		}
+
+	return hasDateType
+}
+
 interface Instruction {
 	array: number
 	optional: number
@@ -128,6 +155,8 @@ const accelerate = (
 
 		case 'number':
 		case 'boolean':
+		case 'integer':
+		case 'bigint':
 			if (nullableCondition) v = `\${${property}??null}`
 			else v = `\${${property}}`
 			break
@@ -212,7 +241,9 @@ const accelerate = (
 
 			if (
 				schema.items.type === 'number' ||
-				schema.items.type === 'boolean'
+				schema.items.type === 'boolean' ||
+				schema.items.type === 'integer' ||
+				schema.items.type === 'bigint'
 			) {
 				if (nullableCondition)
 					v += `\${${nullableCondition}?null:${property}.length?\`[$\{${property}.join(',')}]\`:"[]"`
@@ -243,6 +274,16 @@ const accelerate = (
 			break
 
 		default:
+			if (isDateType(schema)) {
+				if (isNullable || isUndefinable)
+					v = `\${${nullableCondition}?null:typeof ${property}==="object"?\`\"\${${property}.toISOString()}\"\`:${property}}`
+				else {
+					v = `\${typeof ${property}==="object"?\`\"\${${property}.toISOString()}\"\`:${property}}`
+				}
+
+				break
+			}
+
 			v = `$\{JSON.stringify(${property})}`
 
 			break

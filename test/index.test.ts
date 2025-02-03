@@ -56,6 +56,58 @@ describe('Core', () => {
 		expect(createAccelerator(shape)(value)).toBe('')
 	})
 
+	it('handle date', () => {
+		const shape = t.Date()
+
+		const value = new Date() satisfies typeof shape.static
+
+		expect(createAccelerator(shape)(value)).toBe(`"${value.toISOString()}"`)
+	})
+
+	it('handle date timestamp', () => {
+		const shape = t.Date()
+
+		const value = Date.now()
+
+		isEqual(shape, value)
+	})
+
+	it('handle nullable date', () => {
+		const shape = t.Nullable(t.Date())
+
+		const value = new Date() satisfies typeof shape.static
+		expect(createAccelerator(shape)(value)).toBe(`"${value.toISOString()}"`)
+
+		const value2 = null satisfies typeof shape.static
+		isEqual(shape, value2)
+	})
+
+	it('handle nullable date timestamp', () => {
+		const shape = t.Nullable(t.Date())
+
+		const value = 2
+		isEqual(shape, value)
+
+		const value2 = null satisfies typeof shape.static
+		isEqual(shape, value2)
+	})
+
+	it('handle integer', () => {
+		const shape = t.Integer()
+
+		const value = 2.2 satisfies typeof shape.static
+
+		isEqual(shape, value)
+	})
+
+	it('handle bigint', () => {
+		const shape = t.BigInt()
+
+		const value = BigInt(2) satisfies typeof shape.static
+
+		isEqual(shape, +(value + ''))
+	})
+
 	it('handle object', () => {
 		const shape = t.Object({
 			name: t.String(),
