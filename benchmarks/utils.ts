@@ -1,4 +1,4 @@
-import { bench, run, barplot, summary } from 'mitata'
+import { bench, run, barplot, summary, compact } from 'mitata'
 
 import { createAccelerator } from '../src'
 import fastJson from 'fast-json-stringify'
@@ -18,18 +18,20 @@ export const benchmark = <T extends TAnySchema>(
 
 	if (process.env.DEBUG) console.log(encode.toString())
 
-	barplot(() => {
-		summary(() => {
-			bench('JSON Stingify', () => {
-				return JSON.stringify(value)
-			})
+	compact(() => {
+		barplot(() => {
+			summary(() => {
+				bench('JSON Stingify', () => {
+					return JSON.stringify(value)
+				})
 
-			bench('Fast Json Stringify', () => {
-				return fastJsonStringify(value)
-			})
+				bench('Fast Json Stringify', () => {
+					return fastJsonStringify(value)
+				})
 
-			bench('JSON Accelerator', () => {
-				return encode(value)
+				bench('JSON Accelerator', () => {
+					return encode(value)
+				})
 			})
 		})
 	})
