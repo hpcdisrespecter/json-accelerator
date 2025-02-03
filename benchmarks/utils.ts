@@ -11,8 +11,10 @@ export const benchmark = <T extends TAnySchema>(
 	const fastJsonStringify = fastJson(model)
 	const encode = createAccelerator(model)
 
-	if (encode(value) !== JSON.stringify(value))
+	if (encode(value) !== JSON.stringify(value)) {
+		console.log(encode(value))
 		throw new Error('Invalid result')
+	}
 
 	barplot(() => {
 		summary(() => {

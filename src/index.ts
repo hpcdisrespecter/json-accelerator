@@ -91,7 +91,7 @@ export const mergeObjectIntersection = (schema: TAnySchema): TAnySchema => {
 
 interface Instruction {
 	array: number
-	optional: boolean
+	optional: number
 	properties: string[]
 }
 
@@ -153,12 +153,17 @@ const accelerate = (
 
 			let init = true
 			let hasOptional = false
+			let op = `op[${instruction.optional}]`
+
+			for (const key in schema.properties)
+				if (OptionalKind in schema.properties[key]) {
+					instruction.optional++
+					hasOptional = true
+					break
+				}
+
 			for (const key in schema.properties) {
 				const isOptional = OptionalKind in schema.properties[key]
-				if (isOptional && !hasOptional) {
-					hasOptional = true
-					v += `\${(op=false)||''}`
-				}
 				const name = joinProperty(property, key)
 				const hasShortName =
 					schema.properties[key].type === 'object' &&
@@ -166,7 +171,6 @@ const accelerate = (
 
 				const i = instruction.properties.length
 				if (hasShortName) instruction.properties.push(name)
-				if (!instruction.optional) instruction.optional = true
 
 				const k = encodeProperty(key)
 				const p = accelerate(
@@ -175,14 +179,18 @@ const accelerate = (
 					instruction
 				)
 
-				const comma = `\${op?',':(op=true)&&''}`
+				const comma = `\${${op}?',':(${op}=true)&&''}`
 
 				v += isOptional
 					? `\${(${name}!==undefined?\`${comma}${k}:${p}\`:'')}`
-					: `${!init ? ',' : '\${(op=true)&&""}'}${k}:${p}`
+					: hasOptional
+						? `${!init ? ',' : `\${(${op}=true)&&""}`}${k}:${p}`
+						: `${!init ? ',' : ''}${k}:${p}`
 
 				init = false
 			}
+
+			if (hasOptional) v += `\${(${op}=false)||''}`
 
 			v += '}'
 
@@ -194,7 +202,6 @@ const accelerate = (
 			const i = instruction.array
 
 			instruction.array++
-			if (!instruction.optional) instruction.optional = true
 
 			if (schema.items.type === 'string') {
 				if (nullableCondition)
@@ -250,7 +257,8 @@ const accelerate = (
 
 	let setup = ''
 
-	if (instruction.optional) setup += `let op=false\n`
+	if (instruction.optional)
+		setup += `let op=new Array(${instruction.optional})\n`
 
 	for (let i = 0; i < instruction.properties.length; i++) {
 		const key = `s${i}`
@@ -270,7 +278,7 @@ export const createAccelerator = <T extends TAnySchema>(
 ): ((v: T['static']) => string) => {
 	const f = accelerate(schema, 'v', {
 		array: 0,
-		optional: false,
+		optional: 0,
 		properties: []
 	})
 
