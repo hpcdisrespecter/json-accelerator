@@ -190,8 +190,6 @@ const accelerate = (
 				init = false
 			}
 
-			if (hasOptional) v += `\${(${op}=false)||''}`
-
 			v += '}'
 
 			if (nullableCondition) v += `\`}`
