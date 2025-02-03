@@ -40,6 +40,22 @@ describe('Core', () => {
 		isEqual(shape, value)
 	})
 
+	it('handle null', () => {
+		const shape = t.Null()
+
+		const value = null satisfies typeof shape.static
+
+		isEqual(shape, value)
+	})
+
+	it('handle undefined', () => {
+		const shape = t.Undefined()
+
+		const value = undefined satisfies typeof shape.static
+
+		expect(createAccelerator(shape)(value)).toBe('')
+	})
+
 	it('handle object', () => {
 		const shape = t.Object({
 			name: t.String(),
@@ -402,6 +418,25 @@ describe('Core', () => {
 				}
 			}
 		] satisfies typeof shape.static
+
+		isEqual(shape, value)
+	})
+
+	it('handle additionalProperties', () => {
+		const shape = t.Object(
+			{
+				name: t.String(),
+				playing: t.Optional(t.String())
+			},
+			{
+				additionalProperties: true
+			}
+		)
+
+		const value = {
+			name: 'saltyaom',
+			playing: 'Strinova'
+		} satisfies typeof shape.static
 
 		isEqual(shape, value)
 	})
