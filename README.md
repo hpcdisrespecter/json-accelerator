@@ -12,9 +12,9 @@ cpu: Apple M1 Max
 runtime: node 22.6.0 (arm64-darwin)
 
 summary
-  JSON Acclerator
-   1.72x faster than JSON Stingify
-   2.05x faster than Fast Json Stringify
+  JSON Accelerator
+   1.8x faster than JSON Stingify
+   2.15x faster than Fast Json Stringify
 ```
 
 ## Installation
