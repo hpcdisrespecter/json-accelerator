@@ -2,9 +2,9 @@ if ('Bun' in globalThis) {
   throw new Error('❌ Use Node.js to run this test!');
 }
 
-import { bearer } from '@elysiajs/bearer';
+import { createAccelerator } from 'json-accelerator';
 
-if (typeof bearer !== 'function') {
+if (typeof createAccelerator !== 'function') {
   throw new Error('❌ ESM Node.js failed');
 }
 

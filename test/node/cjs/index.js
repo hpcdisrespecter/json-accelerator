@@ -2,9 +2,9 @@ if ('Bun' in globalThis) {
   throw new Error('❌ Use Node.js to run this test!');
 }
 
-const { bearer } = require('@elysiajs/bearer');
+const { createAccelerator } = require('json-accelerator');
 
-if (typeof bearer !== 'function') {
+if (typeof createAccelerator !== 'function') {
   throw new Error('❌ CommonJS Node.js failed');
 }
 
