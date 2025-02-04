@@ -4,8 +4,8 @@ import { createAccelerator } from '../src'
 
 import { describe, expect, it } from 'bun:test'
 
-const isEqual = (shape: TAnySchema, value: unknown) =>
-	expect(JSON.parse(createAccelerator(shape)(value))).toEqual(value)
+const isEqual = (shape: TAnySchema, value: unknown, expected = value) =>
+	expect(JSON.parse(createAccelerator(shape)(value))).toEqual(expected)
 
 describe('Core', () => {
 	it('handle string', () => {
@@ -312,6 +312,38 @@ describe('Core', () => {
 		const value = {
 			name: 'saltyaom',
 			playing: 'Strinova'
+		} satisfies typeof shape.static
+
+		isEqual(shape, value)
+	})
+
+	it('handle nullable array', () => {
+		const shape = t.Object({
+			name: t.String(),
+			games: t.Nullable(t.Array(t.String()))
+		})
+
+		const value = {
+			name: 'saltyaom',
+			games: null
+		} satisfies typeof shape.static
+
+		isEqual(shape, value)
+	})
+
+	it('handle nullable object', () => {
+		const shape = t.Object({
+			name: t.String(),
+			metadata: t.Nullable(
+				t.Object({
+					alias: t.String()
+				})
+			)
+		})
+
+		const value = {
+			name: 'saltyaom',
+			metadata: null
 		} satisfies typeof shape.static
 
 		isEqual(shape, value)

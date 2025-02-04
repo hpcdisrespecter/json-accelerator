@@ -16,7 +16,10 @@ export const benchmark = <T extends TAnySchema>(
 		throw new Error('Invalid result')
 	}
 
-	if (process.env.DEBUG) console.log(encode.toString())
+	if (process.env.DEBUG) {
+		console.log(encode.toString())
+		console.log(encode(value))
+	}
 
 	compact(() => {
 		barplot(() => {

@@ -3,15 +3,47 @@ import type { TAnySchema } from '@sinclair/typebox'
 const Kind = Symbol.for('TypeBox.Kind')
 const OptionalKind = Symbol.for('TypeBox.Optional')
 
-const isSpecialProperty = (name: string): boolean => /(\ |-|\t|\n)/.test(name)
+const isSpecialProperty = (name: string) => /(\ |-|\t|\n)/.test(name)
 
-const joinProperty = (v1: string, v2: string): string => {
+const joinProperty = (v1: string, v2: string) => {
 	if (isSpecialProperty(v2)) return `${v1}["${v2}"]`
 
 	return `${v1}.${v2}`
 }
 
-const encodeProperty = (v: string): string => `"${v}"`
+const encodeProperty = (v: string) => `"${v}"`
+
+const isInteger = (schema: TAnySchema) => {
+	if (!schema.anyOf || (Kind in schema && schema[Kind] !== 'Union'))
+		return false
+
+	let hasIntegerFormat = false
+	let hasNumberType = false
+
+	for (const type of schema.anyOf) {
+		if (type.type === 'null' || type.type === 'undefined') {
+			continue
+		}
+
+		if (
+			!hasIntegerFormat &&
+			type.type === 'string' &&
+			type.format === 'integer'
+		) {
+			hasIntegerFormat = true
+			continue
+		}
+
+		if (!hasNumberType && type.type === 'number') {
+			hasNumberType = true
+			continue
+		}
+
+		return false
+	}
+
+	return hasIntegerFormat && hasNumberType
+}
 
 const getMetadata = (schema: TAnySchema) => {
 	let isNullable = false
@@ -148,16 +180,16 @@ const accelerate = (
 
 	switch (schema.type) {
 		case 'string':
-			if (isNullable || isUndefinable)
-				v = `\${${nullableCondition}?null:\`\\"\${${property}}\\"\`}`
+			if (nullableCondition)
+				v = `\${${nullableCondition}?${schema.default !== undefined ? `'"${schema.default}"'` : `'null'`}:\`\\"\${${property}}\\"\`}`
 			else v = `\"\${${property}}\"`
 			break
 
 		case 'number':
 		case 'boolean':
-		case 'integer':
 		case 'bigint':
-			if (nullableCondition) v = `\${${property}??null}`
+			if (nullableCondition)
+				v = `\${${property}??${schema.default !== undefined ? schema.default : `'null'`}}`
 			else v = `\${${property}}`
 			break
 
@@ -169,7 +201,7 @@ const accelerate = (
 			break
 
 		case 'object':
-			if (nullableCondition) v += `\${${nullableCondition}?null:\``
+			if (nullableCondition) v += `\${${nullableCondition}?"null":\``
 
 			v += '{'
 
@@ -182,7 +214,7 @@ const accelerate = (
 
 			let init = true
 			let hasOptional = false
-			let op = `op[${instruction.optional}]`
+			let op = `op${instruction.optional}`
 
 			for (const key in schema.properties)
 				if (OptionalKind in schema.properties[key]) {
@@ -210,8 +242,16 @@ const accelerate = (
 
 				const comma = `\${${op}?',':(${op}=true)&&''}`
 
+				let defaultValue = schema.properties[key].default
+				if (defaultValue !== undefined) {
+					if (typeof defaultValue === 'string')
+						defaultValue = `"${defaultValue}"`
+
+					defaultValue = `\`${comma}${k}:${defaultValue}\``
+				} else defaultValue = '""'
+
 				v += isOptional
-					? `\${(${name}!==undefined?\`${comma}${k}:${p}\`:'')}`
+					? `\${(${name}===undefined?${defaultValue}:\`${comma}${k}:${p}\`)}`
 					: hasOptional
 						? `${!init ? ',' : `\${(${op}=true)&&""}`}${k}:${p}`
 						: `${!init ? ',' : ''}${k}:${p}`
@@ -232,7 +272,7 @@ const accelerate = (
 
 			if (schema.items.type === 'string') {
 				if (nullableCondition)
-					v += `\${${nullableCondition}?null:${property}.length?\`["$\{${property}.join('",\"')}"]\`:"[]"}`
+					v += `\${${nullableCondition}?"null":${property}.length?\`["$\{${property}.join('",\"')}"]\`:"[]"}`
 				else
 					v += `\${${property}.length?\`["$\{${property}.join('",\"')}"]\`:"[]"}`
 
@@ -242,18 +282,18 @@ const accelerate = (
 			if (
 				schema.items.type === 'number' ||
 				schema.items.type === 'boolean' ||
-				schema.items.type === 'integer' ||
-				schema.items.type === 'bigint'
+				schema.items.type === 'bigint' ||
+				isInteger(schema.items)
 			) {
 				if (nullableCondition)
-					v += `\${${nullableCondition}?null:${property}.length?\`[$\{${property}.join(',')}]\`:"[]"`
+					v += `\${${nullableCondition}?'"null"':${property}.length?\`[$\{${property}.join(',')}]\`:"[]"`
 				else
 					v += `\${${property}.length?\`[$\{${property}.join(',')}]\`:"[]"}`
 
 				break
 			}
 
-			if (isNullable || isUndefinable) v += `\${!${property}?null:\``
+			if (isNullable || isUndefinable) v += `\${!${property}?'"null"':\``
 
 			if (!isRoot) v += `\${(()=>{`
 
@@ -276,10 +316,18 @@ const accelerate = (
 		default:
 			if (isDateType(schema)) {
 				if (isNullable || isUndefinable)
-					v = `\${${nullableCondition}?null:typeof ${property}==="object"?\`\"\${${property}.toISOString()}\"\`:${property}}`
+					v = `\${${nullableCondition}?${schema.default !== undefined ? `'"${schema.default}"'` : "'null'"}:typeof ${property}==="object"?\`\"\${${property}.toISOString()}\"\`:${property}}`
 				else {
 					v = `\${typeof ${property}==="object"?\`\"\${${property}.toISOString()}\"\`:${property}}`
 				}
+
+				break
+			}
+
+			if (isInteger(schema)) {
+				if (nullableCondition)
+					v = `\${${property}??${schema.default !== undefined ? schema.default : `'null'`}}`
+				else v = `\${${property}}`
 
 				break
 			}
@@ -296,16 +344,27 @@ const accelerate = (
 
 	let setup = ''
 
-	if (instruction.optional)
-		setup += `let op=new Array(${instruction.optional})\n`
+	if (instruction.optional) {
+		setup += 'let '
 
-	for (let i = 0; i < instruction.properties.length; i++) {
-		const key = `s${i}`
-		if (i === 0) setup += 'const '
-		else setup += ','
-		setup += `${key}=${instruction.properties[i]}`
+		for (let i = 0; i < instruction.optional; i++) {
+			if (i !== 0) setup += ','
+			setup += `op${i}=false`
+		}
+
+		setup += '\n'
 	}
-	if (instruction.properties.length) setup += '\n'
+
+	if (instruction.properties.length) {
+		setup += 'const '
+
+		for (let i = 0; i < instruction.properties.length; i++) {
+			if (i !== 0) setup += ','
+			setup += `s${i}=${instruction.properties[i]}`
+		}
+
+		setup += '\n'
+	}
 
 	if (isArray) return setup + '\n' + v
 
