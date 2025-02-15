@@ -1,3 +1,7 @@
+/**
+ * *-manual.ts is where end user specifiy which fields should be sanitized manually
+ **/
+
 import { t } from 'elysia'
 import { benchmark } from './utils'
 
@@ -39,7 +43,7 @@ benchmark(
 	{
 		id: 1,
 		name: 'SaltyAom',
-		bio: 'I like train\nhere',
+		bio: 'I like train\n',
 		user: {
 			name: 'SaltyAom',
 			password: '123456'
@@ -68,5 +72,8 @@ benchmark(
 		social: {
 			twitter: 'SaltyAom'
 		}
+	},
+	{
+		sanitize: 'manual'
 	}
 )

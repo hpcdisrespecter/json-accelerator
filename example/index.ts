@@ -3,10 +3,8 @@ import { createAccelerator } from '../src/index'
 
 const shape = t.Object({
 	name: t.String(),
-	playing: t.Nullable(t.Integer({ default: 2 }))
+	playing: t.Nullable(t.String())
 })
-
-console.log(t.Integer({ default: 2 }))
 
 const value = {
 	name: 'saltyaom',
@@ -16,4 +14,4 @@ const value = {
 const stringify = createAccelerator(shape)
 
 console.log(stringify(value))
-console.log(stringify.toString())
+// console.log(stringify.toString())

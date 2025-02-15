@@ -151,8 +151,42 @@ const isDateType = (schema: TAnySchema): boolean => {
 interface Instruction {
 	array: number
 	optional: number
+	hasString: boolean
 	properties: string[]
+	/**
+	 * If unsafe character is found, how should the encoder handle it?
+	 *
+	 * This value only applied to string field.
+	 *
+	 * - 'throw': Throw an error
+	 * - 'ignore': Ignore the unsafe character, this implied that end user should handle it
+	 * - 'sanitize': Sanitize the string and continue encoding
+	 *
+	 * @default 'sanitize'
+	 **/
+	sanitize: 'auto' | 'manual' | 'throw'
 }
+
+const SANITIZE = {
+	auto: (property: string) =>
+		`re.test(${property})?JSON.stringify(${property}):\`"$\{${property}}"\``,
+	manual: (property: string) => `${property}`,
+	throw: (property: string) =>
+		`re.test(${property})?(()=>{throw new Error("Property '${property}' contains invalid characters")})():${property}`
+} satisfies Record<Instruction['sanitize'], (v: string) => string>
+
+const joinStringArray = (p: string) =>
+	`"$\{` +
+	`(()=>{` +
+	`if(${p}.length===1)return ${p}\n` +
+	`let ars=''\n` +
+	`for(let i=0;i<${p}.length;i++){` +
+	`if(i===0)ars+=${p}[i]\n` +
+	`else ars+=\`","\${${p}[i]}\`` +
+	`}` +
+	`return ars` +
+	'})()' +
+	'}"'
 
 const accelerate = (
 	schema: TAnySchema,
@@ -178,11 +212,37 @@ const accelerate = (
 					? `${property}===undefined`
 					: ''
 
+	let sanitize = SANITIZE[instruction.sanitize]
+
 	switch (schema.type) {
 		case 'string':
-			if (nullableCondition)
-				v = `\${${nullableCondition}?${schema.default !== undefined ? `'"${schema.default}"'` : `'null'`}:\`\\"\${${property}}\\"\`}`
-			else v = `\"\${${property}}\"`
+			instruction.hasString = true
+
+			// string operation would be repeated multiple time
+			// it's fine to optimize it to the most optimized way
+			if (
+				instruction.sanitize === 'auto' ||
+				// Elysia specific format, this implied that format might contain unescaped JSON string
+				schema.sanitize
+			) {
+				sanitize = SANITIZE['auto']
+
+				// Sanitize use JSON.stringify which wrap double quotes
+				// this handle the case where the string contains double quotes
+				// As slice(1,-1) is use several compute and would be called multiple times
+				// it's not ideal to slice(1, -1) of JSON.stringify
+				if (nullableCondition)
+					v = `\${${nullableCondition}?${schema.const !== undefined ? `'${JSON.stringify(schema.const)}'` : schema.default !== undefined ? `'${JSON.stringify(schema.default)}'` : `'null'`}:${sanitize(property)}}`
+				else
+					v = `${schema.const !== undefined ? `${JSON.stringify(schema.const)}` : `\${${sanitize(property)}}`}`
+			} else {
+				// In this case quote is handle outside to improve performance
+				if (nullableCondition)
+					v = `\${${nullableCondition}?${schema.const !== undefined ? `'${JSON.stringify(schema.const)}'` : schema.default !== undefined ? `'${JSON.stringify(schema.default)}'` : `'null'`}:\`\\"\${${sanitize(property)}}\\"\`}`
+				else
+					v = `${schema.const !== undefined ? `${JSON.stringify(schema.const)}` : `"\${${sanitize(property)}}"`}`
+			}
+
 			break
 
 		case 'number':
@@ -272,9 +332,9 @@ const accelerate = (
 
 			if (schema.items.type === 'string') {
 				if (nullableCondition)
-					v += `\${${nullableCondition}?"null":${property}.length?\`["$\{${property}.join('",\"')}"]\`:"[]"}`
+					v += `\${${nullableCondition}?"null":${property}.length?\`[${joinStringArray(property)}]\`:"[]"}`
 				else
-					v += `\${${property}.length?\`["$\{${property}.join('",\"')}"]\`:"[]"}`
+					v += `\${${property}.length?\`[${joinStringArray(property)}]\`:"[]"}`
 
 				break
 			}
@@ -286,9 +346,9 @@ const accelerate = (
 				isInteger(schema.items)
 			) {
 				if (nullableCondition)
-					v += `\${${nullableCondition}?'"null"':${property}.length?\`[$\{${property}.join(',')}]\`:"[]"`
+					v += `\${${nullableCondition}?'"null"':${property}.length?\`[$\{${property}.toString()}]\`:"[]"`
 				else
-					v += `\${${property}.length?\`[$\{${property}.join(',')}]\`:"[]"}`
+					v += `\${${property}.length?\`[$\{${property}.toString()}]\`:"[]"}`
 
 				break
 			}
@@ -344,6 +404,9 @@ const accelerate = (
 
 	let setup = ''
 
+	if (instruction.hasString)
+		setup += `const re=/[\\b\\f\\n\\r\\t\\\\\\\\/"]/\n`
+
 	if (instruction.optional) {
 		setup += 'let '
 
@@ -372,12 +435,19 @@ const accelerate = (
 }
 
 export const createAccelerator = <T extends TAnySchema>(
-	schema: T
+	schema: T,
+	{
+		sanitize = 'auto'
+	}: {
+		sanitize?: Instruction['sanitize']
+	} = {}
 ): ((v: T['static']) => string) => {
 	const f = accelerate(schema, 'v', {
 		array: 0,
 		optional: 0,
-		properties: []
+		properties: [],
+		hasString: false,
+		sanitize
 	})
 
 	return Function('v', f) as any

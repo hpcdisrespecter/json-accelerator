@@ -1,3 +1,10 @@
+# 0.1.0 - 5 Feb 2025
+Feature:
+- replace `arrayItems.join('",\"')` in favour of inline `joinStringArray` to improve performance
+- add `sanitize` option for handling unsafe character
+	- new behavior is `sanitize`, previously is equivalent to `manual`
+- support inline a literal value
+
 # 0.0.2 - 4 Feb 2025
 Feature:
 - support integer, bigint, date, datetime

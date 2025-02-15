@@ -6,19 +6,21 @@ import type { TAnySchema } from '@sinclair/typebox'
 
 export const benchmark = <T extends TAnySchema>(
 	model: T,
-	value: T['static']
+	value: T['static'],
+	options?: Parameters<typeof createAccelerator>[1]
 ) => {
 	const fastJsonStringify = fastJson(model)
-	const encode = createAccelerator(model)
-
-	if (encode(value) !== JSON.stringify(value)) {
-		console.log(encode(value))
-		throw new Error('Invalid result')
-	}
+	const encode = createAccelerator(model, options)
 
 	if (process.env.DEBUG) {
 		console.log(encode.toString())
+	}
+
+	if (encode(value) !== JSON.stringify(value)) {
 		console.log(encode(value))
+		console.log('---')
+		console.log(encode.toString())
+		throw new Error('Invalid result')
 	}
 
 	compact(() => {

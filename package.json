@@ -1,6 +1,6 @@
 {
 	"name": "json-accelerator",
-	"version": "0.0.2",
+	"version": "0.1.0",
 	"description": "Speed up JSON stringification by providing OpenAPI/TypeBox model",
 	"license": "MIT",
 	"scripts": {
@@ -11,7 +11,7 @@
 		"release": "npm run build && npm run test && npm publish --access public"
 	},
 	"peerDependencies": {
-		"@sinclair/typebox": ">= 0.34.0"
+		"@sinclair/typebox": "^0.34.15"
 	},
 	"peerDependenciesMeta": {
 		"@sinclair/typebox": {
