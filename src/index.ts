@@ -376,10 +376,14 @@ const accelerate = (
 			instruction.array++
 
 			if (schema.items.type === 'string') {
+				if(isRoot) v += 'return `'
+
 				if (nullableCondition)
 					v += `\${${nullableCondition}?"null":${property}.length?\`[${joinStringArray(property)}]\`:"[]"}`
 				else
 					v += `\${${property}.length?\`[${joinStringArray(property)}]\`:"[]"}`
+
+				if(isRoot) v += '`'
 
 				break
 			}
@@ -390,10 +394,14 @@ const accelerate = (
 				schema.items.type === 'bigint' ||
 				isInteger(schema.items)
 			) {
+				if(isRoot) v += 'return `'
+
 				if (nullableCondition)
 					v += `\${${nullableCondition}?'"null"':${property}.length?\`[$\{${property}.toString()}]\`:"[]"`
 				else
 					v += `\${${property}.length?\`[$\{${property}.toString()}]\`:"[]"}`
+
+					if(isRoot)v += '`'
 
 				break
 			}

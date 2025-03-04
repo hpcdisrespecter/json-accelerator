@@ -1,3 +1,7 @@
+# 0.1.2 - 4 Mar 2025
+Bug fix:
+- handle primitive type when array is root
+
 # 0.1.1 - 4 Mar 2025
 Feature:
 - support Record
