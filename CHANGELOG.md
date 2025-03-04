@@ -1,3 +1,10 @@
+# 0.1.1 - 4 Mar 2025
+Feature:
+- support Record
+
+Improvement:
+- add Tuple test case
+
 # 0.1.0 - 5 Feb 2025
 Feature:
 - replace `arrayItems.join('",\"')` in favour of inline `joinStringArray` to improve performance

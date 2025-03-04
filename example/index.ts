@@ -1,14 +1,17 @@
 import { t } from 'elysia'
 import { createAccelerator } from '../src/index'
 
-const shape = t.Object({
-	name: t.String(),
-	playing: t.Nullable(t.String())
-})
+const shape = t.Record(
+	t.String(),
+	t.Object({
+		a: t.String(),
+		b: t.String()
+	})
+)
 
 const value = {
-	name: 'saltyaom',
-	playing: null
+	a: { a: 'a', b: 'a' },
+	c: { a: 'a', b: 'b' }
 } satisfies typeof shape.static
 
 const stringify = createAccelerator(shape)

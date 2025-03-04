@@ -1,11 +1,13 @@
-import type { TAnySchema } from '@sinclair/typebox'
+import type { TAnySchema, TRecord } from '@sinclair/typebox'
 
 const Kind = Symbol.for('TypeBox.Kind')
 const OptionalKind = Symbol.for('TypeBox.Optional')
 
 const isSpecialProperty = (name: string) => /(\ |-|\t|\n)/.test(name)
 
-const joinProperty = (v1: string, v2: string) => {
+const joinProperty = (v1: string, v2: string | number) => {
+	if (typeof v2 === 'number') return `${v1}[${v2}]`
+
 	if (isSpecialProperty(v2)) return `${v1}["${v2}"]`
 
 	return `${v1}.${v2}`
@@ -188,6 +190,34 @@ const joinStringArray = (p: string) =>
 	'})()' +
 	'}"'
 
+const handleRecord = (
+	schema: TRecord,
+	property: string,
+	instruction: Instruction
+) => {
+	const child =
+		schema.patternProperties['^(.*)$'] ??
+		schema.patternProperties[Object.keys(schema.patternProperties)[0]]
+
+	if (!child) return property
+
+	const i = instruction.array
+	instruction.array++
+
+	return (
+		`\${(()=>{` +
+		`const ar${i}s=Object.keys(${property});` +
+		`let ar${i}v='{';` +
+		`for(let i=0;i<ar${i}s.length;i++){` +
+		`const ar${i}p=${property}[ar${i}s[i]];` +
+		`if(i!==0)ar${i}v+=',';` +
+		`ar${i}v+=\`"\${ar${i}s[i]}":${accelerate(child, `ar${i}p`, instruction)}\`` +
+		`}` +
+		`return ar${i}v + '}'` +
+		`})()}`
+	)
+}
+
 const accelerate = (
 	schema: TAnySchema,
 	property: string,
@@ -275,6 +305,21 @@ const accelerate = (
 			let init = true
 			let hasOptional = false
 			let op = `op${instruction.optional}`
+
+			if (schema[Kind as any] === 'Record') {
+				v = handleRecord(schema as TRecord, property, instruction)
+
+				break
+			}
+
+			if (
+				!Object.keys(schema.properties).length &&
+				schema.patternProperties
+			) {
+				v = `$\{JSON.stringify(${property})}`
+
+				break
+			}
 
 			for (const key in schema.properties)
 				if (OptionalKind in schema.properties[key]) {

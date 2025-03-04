@@ -1,7 +1,9 @@
 import { bench, run, barplot, summary, compact } from 'mitata'
 
 import { createAccelerator } from '../src'
+import { TypeCompiler } from '@sinclair/typebox/compiler'
 import fastJson from 'fast-json-stringify'
+
 import type { TAnySchema } from '@sinclair/typebox'
 
 export const benchmark = <T extends TAnySchema>(
@@ -35,6 +37,14 @@ export const benchmark = <T extends TAnySchema>(
 				})
 
 				bench('JSON Accelerator', () => {
+					return encode(value)
+				})
+
+				const validator = TypeCompiler.Compile(model)
+
+				bench('JSON Accelerator w/ validation', () => {
+					validator.Check(value)
+
 					return encode(value)
 				})
 			})
