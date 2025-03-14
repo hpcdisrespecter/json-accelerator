@@ -1,11 +1,9 @@
-import { t } from 'elysia'
-import { type TAnySchema } from '@sinclair/typebox'
-import { createAccelerator } from '../src'
-
 import { describe, expect, it } from 'bun:test'
+import { isEqual } from './utils'
 
-const isEqual = (shape: TAnySchema, value: unknown, expected = value) =>
-	expect(JSON.parse(createAccelerator(shape)(value))).toEqual(expected)
+import { t } from 'elysia'
+
+import { createAccelerator } from '../src'
 
 describe('Core', () => {
 	it('handle string', () => {

@@ -167,6 +167,7 @@ interface Instruction {
 	 * @default 'sanitize'
 	 **/
 	sanitize: 'auto' | 'manual' | 'throw'
+	definitions: Record<string, TAnySchema>
 }
 
 const SANITIZE = {
@@ -224,6 +225,16 @@ const accelerate = (
 	instruction: Instruction
 ): string => {
 	if (!schema) return ''
+
+	if (
+		Kind in schema &&
+		schema[Kind] === 'Import' &&
+		schema.$ref in schema.$defs
+	)
+		return accelerate(schema.$defs[schema.$ref], property, {
+			...instruction,
+			definitions: Object.assign(instruction.definitions, schema.$defs)
+		})
 
 	let v = ''
 	const isRoot = property === 'v'
@@ -376,14 +387,14 @@ const accelerate = (
 			instruction.array++
 
 			if (schema.items.type === 'string') {
-				if(isRoot) v += 'return `'
+				if (isRoot) v += 'return `'
 
 				if (nullableCondition)
 					v += `\${${nullableCondition}?"null":${property}.length?\`[${joinStringArray(property)}]\`:"[]"}`
 				else
 					v += `\${${property}.length?\`[${joinStringArray(property)}]\`:"[]"}`
 
-				if(isRoot) v += '`'
+				if (isRoot) v += '`'
 
 				break
 			}
@@ -394,14 +405,14 @@ const accelerate = (
 				schema.items.type === 'bigint' ||
 				isInteger(schema.items)
 			) {
-				if(isRoot) v += 'return `'
+				if (isRoot) v += 'return `'
 
 				if (nullableCondition)
 					v += `\${${nullableCondition}?'"null"':${property}.length?\`[$\{${property}.toString()}]\`:"[]"`
 				else
 					v += `\${${property}.length?\`[$\{${property}.toString()}]\`:"[]"}`
 
-					if(isRoot)v += '`'
+				if (isRoot) v += '`'
 
 				break
 			}
@@ -427,6 +438,13 @@ const accelerate = (
 			break
 
 		default:
+			if (schema.$ref && schema.$ref in instruction.definitions)
+				return accelerate(
+					instruction.definitions[schema.$ref],
+					property,
+					instruction
+				)
+
 			if (isDateType(schema)) {
 				if (isNullable || isUndefinable)
 					v = `\${${nullableCondition}?${schema.default !== undefined ? `'"${schema.default}"'` : "'null'"}:typeof ${property}==="object"?\`\"\${${property}.toISOString()}\"\`:${property}}`
@@ -490,17 +508,17 @@ const accelerate = (
 export const createAccelerator = <T extends TAnySchema>(
 	schema: T,
 	{
-		sanitize = 'auto'
-	}: {
-		sanitize?: Instruction['sanitize']
-	} = {}
+		sanitize = 'auto',
+		definitions = {}
+	}: Partial<Pick<Instruction, 'sanitize' | 'definitions'>> = {}
 ): ((v: T['static']) => string) => {
 	const f = accelerate(schema, 'v', {
 		array: 0,
 		optional: 0,
 		properties: [],
 		hasString: false,
-		sanitize
+		sanitize,
+		definitions
 	})
 
 	return Function('v', f) as any

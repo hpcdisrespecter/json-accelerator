@@ -1,7 +1,8 @@
-import { Type as t } from '@sinclair/typebox'
-import { mergeObjectIntersection } from '../src'
-
 import { describe, expect, it } from 'bun:test'
+
+import { Type as t } from '@sinclair/typebox'
+
+import { mergeObjectIntersection } from '../src'
 
 describe('Merge Object Intersection', () => {
 	it('work', () => {

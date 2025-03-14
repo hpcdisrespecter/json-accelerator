@@ -1,11 +1,23 @@
 import { t } from 'elysia'
 import { createAccelerator } from '../src/index'
 
-const shape = t.Array(t.Number())
+const v = t.Module({
+	a: t.Object({
+		name: t.String(),
+		job: t.Optional(t.Ref('job')),
+		trait: t.Optional(t.String())
+	}),
+	job: t.Number()
+})
 
-const value = [1,2] satisfies typeof shape.static
+const shape = v.Import('a')
 
-const stringify = createAccelerator(shape)
+const value = {
+	name: 'Jane Doe',
+	job: 'Software Engineer',
+	trait: 'Friendly'
+} satisfies typeof shape.static
 
-console.log(stringify(value))
-// console.log(stringify.toString())
+const mirror = createAccelerator(shape)
+
+console.log(mirror(value))

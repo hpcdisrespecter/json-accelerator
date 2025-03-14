@@ -1,3 +1,7 @@
+# 0.1.3 - 14 Mar 2025
+Bug fix:
+- support `t.Module`, `t.Ref`
+
 # 0.1.2 - 4 Mar 2025
 Bug fix:
 - handle primitive type when array is root
