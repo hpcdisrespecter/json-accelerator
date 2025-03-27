@@ -1,3 +1,7 @@
+# 0.1.4 - 27 Mar 2025
+Improvement:
+- Improve array performance by avoiding unnecessary closure reference
+
 # 0.1.3 - 14 Mar 2025
 Bug fix:
 - support `t.Module`, `t.Ref`

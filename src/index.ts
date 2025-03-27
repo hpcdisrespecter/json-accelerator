@@ -180,15 +180,15 @@ const SANITIZE = {
 
 const joinStringArray = (p: string) =>
 	`"$\{` +
-	`(()=>{` +
-	`if(${p}.length===1)return ${p}\n` +
+	`((p)=>{` +
+	`if(p.length===1)return p\n` +
 	`let ars=''\n` +
-	`for(let i=0;i<${p}.length;i++){` +
-	`if(i===0)ars+=${p}[i]\n` +
-	`else ars+=\`","\${${p}[i]}\`` +
+	`for(let i=0;i<p.length;i++){` +
+	`if(i===0)ars+=p[i]\n` +
+	`else ars+=\`","\${p[i]}\`` +
 	`}` +
 	`return ars` +
-	'})()' +
+	`})(${p})` +
 	'}"'
 
 const handleRecord = (
@@ -206,16 +206,16 @@ const handleRecord = (
 	instruction.array++
 
 	return (
-		`\${(()=>{` +
-		`const ar${i}s=Object.keys(${property});` +
+		`\${((ar${i}n)=>{` +
+		`const ar${i}s=Object.keys(ar${i}n);` +
 		`let ar${i}v='{';` +
 		`for(let i=0;i<ar${i}s.length;i++){` +
-		`const ar${i}p=${property}[ar${i}s[i]];` +
+		`const ar${i}p=ar${i}n[ar${i}s[i]];` +
 		`if(i!==0)ar${i}v+=',';` +
 		`ar${i}v+=\`"\${ar${i}s[i]}":${accelerate(child, `ar${i}p`, instruction)}\`` +
 		`}` +
 		`return ar${i}v + '}'` +
-		`})()}`
+		`})(${property})}`
 	)
 }
 
@@ -419,10 +419,10 @@ const accelerate = (
 
 			if (isNullable || isUndefinable) v += `\${!${property}?'"null"':\``
 
-			if (!isRoot) v += `\${(()=>{`
+			if (isRoot) v += `const ar${i}s=${property};`
+			else v += `\${((ar${i}s)=>{`
 
 			v +=
-				`const ar${i}s=${property};` +
 				`let ar${i}v='[';` +
 				`for(let i=0;i<ar${i}s.length;i++){` +
 				`const ar${i}p=ar${i}s[i];` +
@@ -431,7 +431,7 @@ const accelerate = (
 				`}` +
 				`return ar${i}v+']'`
 
-			if (!isRoot) v += `})()}`
+			if (!isRoot) v += `})(${property})}`
 
 			if (isNullable || isUndefinable) v += `\`}`
 
