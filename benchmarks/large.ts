@@ -10,10 +10,10 @@ benchmark(
 			user: t.Object({
 				name: t.String(),
 				password: t.String(),
-				email: t.Optional(t.String({ format: 'email' })),
+				email: t.Optional(t.String()),
 				age: t.Optional(t.Number()),
-				avatar: t.Optional(t.String({ format: 'uri' })),
-				cover: t.Optional(t.String({ format: 'uri' }))
+				avatar: t.Optional(t.String()),
+				cover: t.Optional(t.String())
 			}),
 			playing: t.Optional(t.String()),
 			wishlist: t.Optional(t.Array(t.Number())),
