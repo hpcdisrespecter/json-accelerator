@@ -36,7 +36,7 @@ const isInteger = (schema: TAnySchema) => {
 			continue
 		}
 
-		if (!hasNumberType && type.type === 'number') {
+		if (!hasNumberType && (type.type === 'number' || type.type === 'integer')) {
 			hasNumberType = true
 			continue
 		}
