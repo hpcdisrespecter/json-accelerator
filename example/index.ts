@@ -2,15 +2,13 @@ import { t } from 'elysia'
 import { createAccelerator } from '../src/index'
 
 const shape = t.Object({
-	name: t.String(),
-	playing: t.Nullable(t.Integer({ default: 1 }))
+	message: t.String({
+		trusted: true
+	})
 })
 
-console.log(t.Optional(t.String()))
-
 const value = {
-	name: 'saltyaom',
-	playing: null
+	message: 'a'
 } satisfies typeof shape.static
 
 const mirror = createAccelerator(shape)

@@ -36,7 +36,10 @@ const isInteger = (schema: TAnySchema) => {
 			continue
 		}
 
-		if (!hasNumberType && (type.type === 'number' || type.type === 'integer')) {
+		if (
+			!hasNumberType &&
+			(type.type === 'number' || type.type === 'integer')
+		) {
 			hasNumberType = true
 			continue
 		}
@@ -257,7 +260,7 @@ const accelerate = (
 
 	switch (schema.type) {
 		case 'string':
-			instruction.hasString = true
+			if (!schema.const && !schema.trusted) instruction.hasString = true
 
 			// string operation would be repeated multiple time
 			// it's fine to optimize it to the most optimized way
@@ -272,10 +275,19 @@ const accelerate = (
 				// this handle the case where the string contains double quotes
 				// As slice(1,-1) is use several compute and would be called multiple times
 				// it's not ideal to slice(1, -1) of JSON.stringify
-				if (nullableCondition)
+				if (nullableCondition) {
+					if (schema.trusted)
+						sanitize = (v: string) =>
+							`\`"$\{${SANITIZE['manual'](v)}}"\``
+
 					v = `\${${nullableCondition}?${schema.const !== undefined ? `'${JSON.stringify(schema.const)}'` : schema.default !== undefined ? `'${JSON.stringify(schema.default)}'` : `'null'`}:${sanitize(property)}}`
-				else
-					v = `${schema.const !== undefined ? `${JSON.stringify(schema.const)}` : `\${${sanitize(property)}}`}`
+				} else {
+					if (schema.const !== undefined)
+						v = JSON.stringify(schema.const)
+					else if (schema.trusted)
+						v = `"\${${SANITIZE['manual'](property)}}"`
+					else v = `\${${sanitize(property)}}`
+				}
 			} else {
 				// In this case quote is handle outside to improve performance
 				if (nullableCondition)

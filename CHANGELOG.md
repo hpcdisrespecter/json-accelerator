@@ -1,6 +1,11 @@
+# 0.1.5 - 22 Apr 2025
+Improvement:
+- add `schema.trusted` for string
+- improve string placement when using `t.String({ trusted: true })` and `sanitize: manual`
+
 # 0.1.4 - 27 Mar 2025
 Improvement:
-- Improve array performance by avoiding unnecessary closure reference
+- improve array performance by avoiding unnecessary closure reference
 
 # 0.1.3 - 14 Mar 2025
 Bug fix:
